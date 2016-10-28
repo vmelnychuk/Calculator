@@ -22,7 +22,12 @@ class CalculatorBrain
         "√" : Operation.UnaryOperation(sqrt),
         "cos" : Operation.UnaryOperation(cos),
         "sin" : Operation.UnaryOperation(sin),
-        "×" : Operation.BinaryOperation(multiply),
+        "±" : Operation.UnaryOperation({ -$0 }),
+        "C" : Operation.UnaryOperation({ _ in 0.0 }),
+        "×" : Operation.BinaryOperation({ $0 * $1 }),
+        "÷" : Operation.BinaryOperation({ $0 / $1 }),
+        "+" : Operation.BinaryOperation({ $0 + $1 }),
+        "-" : Operation.BinaryOperation({ $0 - $1 }),
         "=" : Operation.Equals
     ]
     
@@ -40,22 +45,29 @@ class CalculatorBrain
     func performOperation(symbol: String) {
         if let operation = operations[symbol] {
             switch operation {
-            case .Constant(let value): accumulator = value
-            case .UnaryOperation(let function): accumulator = function(accumulator)
+            case .Constant(let value):
+                accumulator = value
+            case .UnaryOperation(let function):
+                accumulator = function(accumulator)
             case .BinaryOperation(let function):
+                executePendingBinaryOperation()
                 pending = PendingBinaryOperationInfo(binaryFunction: function, fistOpernd: accumulator)
-            case .Equals :
-                if pending != nil {
-                    accumulator = pending!.binaryFunction(pending!.fistOpernd, accumulator)
-                    pending = nil
-                }
+            case .Equals:
+                executePendingBinaryOperation()
             }
+        }
+    }
+    
+    private func executePendingBinaryOperation() {
+        if pending != nil {
+            accumulator = pending!.binaryFunction(pending!.fistOpernd, accumulator)
+            pending = nil
         }
     }
     
     private var pending: PendingBinaryOperationInfo?
     
-    struct PendingBinaryOperationInfo {
+    private struct PendingBinaryOperationInfo {
         var binaryFunction: (Double, Double) -> Double
         var fistOpernd: Double
     }
